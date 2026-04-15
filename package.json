@@ -1,0 +1,17 @@
+{
+  "name": "load-balanced-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build tooling for Load Balanced Sync admin assets",
+  "scripts": {
+    "build": "wp-scripts build src/admin/index.js --output-path=build",
+    "start": "wp-scripts start src/admin/index.js --output-path=build",
+    "packages-update": "wp-scripts packages-update",
+    "lint:js": "wp-scripts lint-js src/**/*.js",
+    "lint:css": "wp-scripts lint-style src/**/*.scss",
+    "format": "wp-scripts format src"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0"
+  }
+}

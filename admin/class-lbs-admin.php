@@ -18,12 +18,14 @@ class LBS_Admin {
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'admin_post_lbs_save_settings', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_post_lbs_generate_invite', array( $this, 'handle_generate_invite' ) );
 		add_action( 'admin_post_lbs_accept_invite', array( $this, 'handle_accept_invite' ) );
 		add_action( 'admin_post_lbs_ping_peer', array( $this, 'handle_ping_peer' ) );
 		add_action( 'admin_post_lbs_remove_peer', array( $this, 'handle_remove_peer' ) );
 		add_action( 'admin_post_lbs_clear_log', array( $this, 'handle_clear_log' ) );
+		add_action( 'admin_post_lbs_download_log', array( $this, 'handle_download_log' ) );
 	}
 
 	/**
@@ -48,18 +50,159 @@ class LBS_Admin {
 		if ( 'settings_page_load-balanced-sync' !== $hook ) {
 			return;
 		}
-		wp_enqueue_style(
-			'lbs-admin',
-			LBS_PLUGIN_URL . 'assets/lbs-admin.css',
-			array(),
-			LBS_VERSION
+
+		$tab_param = filter_input( INPUT_GET, 'tab', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$tab       = $tab_param ? sanitize_key( wp_unslash( $tab_param ) ) : 'settings';
+
+		$build_asset_path = LBS_PLUGIN_DIR . 'build/index.asset.php';
+		$build_script_url = LBS_PLUGIN_URL . 'build/index.js';
+		$build_style_path = LBS_PLUGIN_DIR . 'build/index.css';
+
+		if ( file_exists( $build_asset_path ) ) {
+			$asset = require $build_asset_path;
+			$deps  = is_array( $asset['dependencies'] ?? null ) ? $asset['dependencies'] : array();
+			$ver   = is_string( $asset['version'] ?? null ) ? $asset['version'] : LBS_VERSION;
+
+			$required_deps = array( 'wp-element', 'wp-i18n', 'wp-components' );
+			if ( wp_script_is( 'wp-dataviews', 'registered' ) ) {
+				$required_deps[] = 'wp-dataviews';
+			}
+			$deps = array_values( array_unique( array_merge( $deps, $required_deps ) ) );
+
+			wp_enqueue_script( 'lbs-admin', $build_script_url, $deps, $ver, true );
+
+			if ( file_exists( $build_style_path ) ) {
+				$style_deps = array( 'wp-components' );
+				if ( wp_style_is( 'wp-dataviews', 'registered' ) ) {
+					$style_deps[] = 'wp-dataviews';
+				}
+
+				wp_enqueue_style( 'lbs-admin', LBS_PLUGIN_URL . 'build/index.css', $style_deps, $ver );
+			}
+		} else {
+			$fallback_script_deps = array( 'wp-element', 'wp-i18n', 'wp-components' );
+			if ( wp_script_is( 'wp-dataviews', 'registered' ) ) {
+				$fallback_script_deps[] = 'wp-dataviews';
+			}
+
+			wp_enqueue_style(
+				'lbs-admin',
+				LBS_PLUGIN_URL . 'assets/lbs-admin.css',
+				array(),
+				LBS_VERSION
+			);
+			wp_enqueue_script(
+				'lbs-admin',
+				LBS_PLUGIN_URL . 'assets/lbs-admin.js',
+				$fallback_script_deps,
+				LBS_VERSION,
+				true
+			);
+		}
+
+		if ( 'log' === $tab ) {
+			wp_add_inline_script(
+				'lbs-admin',
+				'window.lbsLogViewerConfig = ' . wp_json_encode( $this->get_log_viewer_config() ) . ';',
+				'before'
+			);
+		}
+	}
+
+	/**
+	 * Build client config for the log DataViews renderer.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_log_viewer_config(): array {
+		$selected_file_param = filter_input( INPUT_GET, 'log_file', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$selected_file       = $selected_file_param ? sanitize_file_name( wp_unslash( $selected_file_param ) ) : '';
+
+		if ( '' !== $selected_file ) {
+			$entries = LBS_Logger::get_entries_by_filename( $selected_file, 1000 );
+		} else {
+			$entries = LBS_Logger::get( 1000 );
+		}
+
+		$normalized = array();
+		foreach ( $entries as $index => $entry ) {
+			$normalized[] = array(
+				'id'      => (int) $index + 1,
+				'ts'      => absint( $entry['ts'] ?? 0 ),
+				'level'   => sanitize_key( $entry['level'] ?? 'info' ),
+				'message' => (string) ( $entry['message'] ?? '' ),
+			);
+		}
+
+		return array(
+			'selectedFile' => $selected_file,
+			'entries'      => $normalized,
+			'files'        => LBS_Logger::get_log_files(),
+			'restBase'     => esc_url_raw( rest_url( 'lbs/v1/log' ) ),
+			'restNonce'    => wp_create_nonce( 'wp_rest' ),
 		);
-		wp_enqueue_script(
-			'lbs-admin',
-			LBS_PLUGIN_URL . 'assets/lbs-admin.js',
-			array(),
-			LBS_VERSION,
-			true
+	}
+
+	/**
+	 * Register admin log viewer REST endpoints.
+	 */
+	public function register_rest_routes(): void {
+		register_rest_route(
+			'lbs/v1',
+			'/log/entries',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'rest_get_log_entries' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'manage_options' );
+				},
+				'args'                => array(
+					'file'     => array(
+						'type'     => 'string',
+						'required' => false,
+					),
+					'per_page' => array(
+						'type'              => 'integer',
+						'required'          => false,
+						'default'           => 500,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Return normalized log entries for DataViews rendering.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response
+	 */
+	public function rest_get_log_entries( WP_REST_Request $request ): WP_REST_Response {
+		$file     = sanitize_file_name( (string) $request->get_param( 'file' ) );
+		$per_page = max( 1, min( 2000, (int) $request->get_param( 'per_page' ) ) );
+
+		if ( '' !== $file ) {
+			$entries = LBS_Logger::get_entries_by_filename( $file, $per_page );
+		} else {
+			$entries = LBS_Logger::get( $per_page );
+		}
+
+		$items = array();
+		foreach ( $entries as $index => $entry ) {
+			$items[] = array(
+				'id'      => (int) $index + 1,
+				'ts'      => absint( $entry['ts'] ?? 0 ),
+				'level'   => sanitize_key( $entry['level'] ?? 'info' ),
+				'message' => (string) ( $entry['message'] ?? '' ),
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'items' => $items,
+			),
+			200
 		);
 	}
 
@@ -286,6 +429,43 @@ class LBS_Admin {
 				admin_url( 'options-general.php' )
 			)
 		);
+		exit;
+	}
+
+	/**
+	 * Handle downloading a selected JSONL log file.
+	 */
+	public function handle_download_log(): void {
+		check_admin_referer( 'lbs_download_log' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Insufficient permissions.', 'load-balanced-sync' ) );
+		}
+
+		$file = sanitize_file_name( wp_unslash( $_GET['file'] ?? '' ) );
+		$path = LBS_Logger::get_log_file_path_by_name( $file );
+
+		if ( ! $path || ! is_file( $path ) ) {
+			wp_die( esc_html__( 'Log file not found.', 'load-balanced-sync' ) );
+		}
+
+		header( 'Content-Description: File Transfer' );
+		header( 'Content-Type: application/x-ndjson; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . rawurlencode( wp_basename( $path ) ) . '"' );
+		header( 'Content-Transfer-Encoding: binary' );
+		header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
+		header( 'Pragma: public' );
+
+		$filesize = filesize( $path );
+		if ( false !== $filesize ) {
+			header( 'Content-Length: ' . (string) $filesize );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Streaming local admin-requested log file download.
+		$contents = file_get_contents( $path );
+		if ( false !== $contents ) {
+			echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Raw file download output.
+		}
+
 		exit;
 	}
 }

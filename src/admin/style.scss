@@ -46,9 +46,17 @@
 	vertical-align: middle;
 }
 
-.lbs-status-active  { background-color: #46b450; }
-.lbs-status-pending { background-color: #ffb900; }
-.lbs-status-error   { background-color: #dc3232; }
+.lbs-status-active {
+	background-color: #46b450;
+}
+
+.lbs-status-pending {
+	background-color: #ffb900;
+}
+
+.lbs-status-error {
+	background-color: #dc3232;
+}
 
 .lbs-error-hint {
 	color: #dc3232;
