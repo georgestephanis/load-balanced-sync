@@ -17,6 +17,7 @@ class LBS_Admin {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
+		add_action( 'admin_notices', array( $this, 'render_missing_build_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'admin_post_lbs_save_settings', array( $this, 'handle_save_settings' ) );
@@ -42,6 +43,29 @@ class LBS_Admin {
 	}
 
 	/**
+	 * Warn when compiled admin assets have not been built yet.
+	 */
+	public function render_missing_build_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || 'settings_page_load-balanced-sync' !== $screen->id ) {
+			return;
+		}
+
+		if ( file_exists( LBS_PLUGIN_DIR . 'build/index.asset.php' ) ) {
+			return;
+		}
+
+		printf(
+			'<div class="notice notice-warning"><p>%s</p></div>',
+			esc_html__( 'Load Balanced Sync admin assets have not been built yet. Run npm install and npm run build in the plugin directory to enable the enhanced admin UI.', 'load-balanced-sync' )
+		);
+	}
+
+	/**
 	 * Enqueue admin scripts/styles on plugin page.
 	 *
 	 * @param string $hook Current admin page hook suffix.
@@ -56,48 +80,32 @@ class LBS_Admin {
 
 		$build_asset_path = LBS_PLUGIN_DIR . 'build/index.asset.php';
 		$build_script_url = LBS_PLUGIN_URL . 'build/index.js';
-		$build_style_path = LBS_PLUGIN_DIR . 'build/index.css';
+		$build_style_path = LBS_PLUGIN_DIR . 'build/style-index.css';
 
-		if ( file_exists( $build_asset_path ) ) {
-			$asset = require $build_asset_path;
-			$deps  = is_array( $asset['dependencies'] ?? null ) ? $asset['dependencies'] : array();
-			$ver   = is_string( $asset['version'] ?? null ) ? $asset['version'] : LBS_VERSION;
+		if ( ! file_exists( $build_asset_path ) ) {
+			return;
+		}
 
-			$required_deps = array( 'wp-element', 'wp-i18n', 'wp-components' );
-			if ( wp_script_is( 'wp-dataviews', 'registered' ) ) {
-				$required_deps[] = 'wp-dataviews';
-			}
-			$deps = array_values( array_unique( array_merge( $deps, $required_deps ) ) );
+		$asset = require $build_asset_path;
+		$deps  = is_array( $asset['dependencies'] ?? null ) ? $asset['dependencies'] : array();
+		$ver   = is_string( $asset['version'] ?? null ) ? $asset['version'] : LBS_VERSION;
 
-			wp_enqueue_script( 'lbs-admin', $build_script_url, $deps, $ver, true );
+		$required_deps = array( 'wp-element', 'wp-i18n', 'wp-components' );
+		if ( wp_script_is( 'wp-dataviews', 'registered' ) ) {
+			$required_deps[] = 'wp-dataviews';
+		}
+		$deps = array_values( array_unique( array_merge( $deps, $required_deps ) ) );
 
-			if ( file_exists( $build_style_path ) ) {
-				$style_deps = array( 'wp-components' );
-				if ( wp_style_is( 'wp-dataviews', 'registered' ) ) {
-					$style_deps[] = 'wp-dataviews';
-				}
+		wp_enqueue_script( 'lbs-admin', $build_script_url, $deps, $ver, true );
 
-				wp_enqueue_style( 'lbs-admin', LBS_PLUGIN_URL . 'build/index.css', $style_deps, $ver );
-			}
-		} else {
-			$fallback_script_deps = array( 'wp-element', 'wp-i18n', 'wp-components' );
-			if ( wp_script_is( 'wp-dataviews', 'registered' ) ) {
-				$fallback_script_deps[] = 'wp-dataviews';
+		if ( file_exists( $build_style_path ) ) {
+			$style_deps = array( 'wp-components' );
+			if ( wp_style_is( 'wp-dataviews', 'registered' ) ) {
+				$style_deps[] = 'wp-dataviews';
 			}
 
-			wp_enqueue_style(
-				'lbs-admin',
-				LBS_PLUGIN_URL . 'assets/lbs-admin.css',
-				array(),
-				LBS_VERSION
-			);
-			wp_enqueue_script(
-				'lbs-admin',
-				LBS_PLUGIN_URL . 'assets/lbs-admin.js',
-				$fallback_script_deps,
-				LBS_VERSION,
-				true
-			);
+			wp_enqueue_style( 'lbs-admin', LBS_PLUGIN_URL . 'build/style-index.css', $style_deps, $ver );
+			wp_style_add_data( 'lbs-admin', 'rtl', 'replace' );
 		}
 
 		if ( 'log' === $tab ) {
