@@ -5,13 +5,18 @@
  * Uses wp_remote_post() with Application Password Basic Auth.
  * Temporarily enables requests to private/LAN IPs by hooking
  * http_request_host_is_external for the duration of each call.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Handles authenticated outbound REST requests to peer sites.
+ */
 class LBS_HTTP_Client {
 
-	private const TIMEOUT = 15; // seconds
+	private const TIMEOUT = 15; // seconds.
 
 	// -----------------------------------------------------------------------
 	// Public API
@@ -42,7 +47,7 @@ class LBS_HTTP_Client {
 		$url = trailingslashit( $peer['real_url'] ) . 'wp-json/lbs/v1/ping';
 
 		$body = array(
-			'sender_uuid' => $this->get_own_uuid( $peer ),
+			'sender_uuid' => $this->get_own_uuid(),
 		);
 
 		return $this->post( $url, $body, $this->auth_headers( $peer ) );
@@ -80,7 +85,7 @@ class LBS_HTTP_Client {
 	/**
 	 * Query a peer's installed version of a component.
 	 *
-	 * @param array  $peer
+	 * @param array  $peer        Peer record.
 	 * @param string $type        'plugin', 'theme', or 'core'.
 	 * @param string $identifier  Plugin basename or theme slug.
 	 * @return array|WP_Error
@@ -103,6 +108,9 @@ class LBS_HTTP_Client {
 
 	/**
 	 * Returns HTTP Basic Auth headers for a peer, using its stored app password.
+	 *
+	 * @param array $peer Peer record.
+	 * @return array<string,string>
 	 */
 	private function auth_headers( array $peer ): array {
 		$app_password = LBS_Crypto::decrypt( $peer['app_password_encrypted'] ?? '' );
@@ -115,17 +123,21 @@ class LBS_HTTP_Client {
 			return array();
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required by HTTP Basic Auth format.
 		$credentials = base64_encode( $app_username . ':' . $app_password );
 		return array( 'Authorization' => 'Basic ' . $credentials );
 	}
 
 	/**
 	 * Returns the UUID that this site has in the peer's peer list.
+	 *
 	 * We discover this by looking at the peer record, which stores the UUID
 	 * the peer assigned to us during handshake — but we don't have that.
 	 * Instead, we send our own settings to help the peer identify us.
+	 *
+	 * @return string
 	 */
-	private function get_own_uuid( array $peer ): string {
+	private function get_own_uuid(): string {
 		// Our UUID in the peer's registry is not stored locally.
 		// We identify ourselves by our real URL instead, via the ping body.
 		return '';
@@ -134,13 +146,13 @@ class LBS_HTTP_Client {
 	/**
 	 * Perform a POST request to a peer URL.
 	 *
-	 * @param string $url
-	 * @param array  $body
-	 * @param array  $extra_headers
+	 * @param string               $url           Target URL.
+	 * @param array<string,mixed>  $body          Request payload.
+	 * @param array<string,string> $extra_headers Extra request headers.
 	 * @return array|WP_Error  Decoded JSON body on success.
 	 */
 	private function post( string $url, array $body, array $extra_headers ): array|WP_Error {
-		$host = parse_url( $url, PHP_URL_HOST );
+		$host = wp_parse_url( $url, PHP_URL_HOST );
 		$this->allow_host( $host );
 
 		$response = wp_remote_post(
@@ -156,16 +168,20 @@ class LBS_HTTP_Client {
 			)
 		);
 
-		$this->disallow_host( $host );
+		$this->disallow_host();
 
 		return $this->parse_response( $response );
 	}
 
 	/**
 	 * Perform a GET request to a peer URL.
+	 *
+	 * @param string               $url           Target URL.
+	 * @param array<string,string> $extra_headers Extra request headers.
+	 * @return array|WP_Error
 	 */
 	private function get( string $url, array $extra_headers ): array|WP_Error {
-		$host = parse_url( $url, PHP_URL_HOST );
+		$host = wp_parse_url( $url, PHP_URL_HOST );
 		$this->allow_host( $host );
 
 		$response = wp_remote_get(
@@ -176,13 +192,16 @@ class LBS_HTTP_Client {
 			)
 		);
 
-		$this->disallow_host( $host );
+		$this->disallow_host();
 
 		return $this->parse_response( $response );
 	}
 
 	/**
 	 * Parse an HTTP response into a data array or WP_Error.
+	 *
+	 * @param array|WP_Error $response HTTP response.
+	 * @return array|WP_Error
 	 */
 	private function parse_response( array|WP_Error $response ): array|WP_Error {
 		if ( is_wp_error( $response ) ) {
@@ -213,22 +232,41 @@ class LBS_HTTP_Client {
 	// filter to allow outbound requests to a specific known-good peer host.
 	// -----------------------------------------------------------------------
 
+	/**
+	 * Temporarily allowed host while sending a peer request.
+	 *
+	 * @var string
+	 */
 	private string $allowed_host = '';
 
+	/**
+	 * Temporarily allow a specific host for outbound requests.
+	 *
+	 * @param string $host Hostname to allow.
+	 */
 	private function allow_host( string $host ): void {
 		$this->allowed_host = $host;
-		add_filter( 'http_request_host_is_external', array( $this, '_filter_allow_host' ), 10, 2 );
+		add_filter( 'http_request_host_is_external', array( $this, 'filter_allow_host' ), 10, 2 );
 	}
 
-	private function disallow_host( string $host ): void {
-		remove_filter( 'http_request_host_is_external', array( $this, '_filter_allow_host' ), 10 );
+	/**
+	 * Remove the temporary host allowlist filter.
+	 */
+	private function disallow_host(): void {
+		remove_filter( 'http_request_host_is_external', array( $this, 'filter_allow_host' ), 10 );
 		$this->allowed_host = '';
 	}
 
 	/**
+	 * Filter callback for host externality checks.
+	 *
+	 * @param bool   $allow Whether host is currently allowed.
+	 * @param string $host  Host being validated.
+	 * @return bool
+	 *
 	 * @internal  Used only as a temporary filter callback.
 	 */
-	public function _filter_allow_host( bool $allow, string $host ): bool {
+	public function filter_allow_host( bool $allow, string $host ): bool {
 		if ( $host === $this->allowed_host ) {
 			return true;
 		}

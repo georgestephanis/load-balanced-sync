@@ -4,10 +4,15 @@
  *
  * Uses the same internal upgrader classes that WordPress's auto-updater uses,
  * with Automatic_Upgrader_Skin to suppress all output.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Executes plugin/theme/core updates in an asynchronous cron context.
+ */
 class LBS_Update_Executor {
 
 	/**
@@ -69,10 +74,17 @@ class LBS_Update_Executor {
 		LBS_Logger::info( "Finished update job {$job_id}." );
 	}
 
-	// -----------------------------------------------------------------------
-	// Type-specific upgraders
-	// -----------------------------------------------------------------------
+	/**
+	 * Type-specific upgraders.
+	 */
 
+	/**
+	 * Upgrade a plugin to the latest available package.
+	 *
+	 * @param string                  $plugin_file Plugin basename.
+	 * @param string                  $new_version Requested version string.
+	 * @param Automatic_Upgrader_Skin $skin        Upgrader skin.
+	 */
 	private static function upgrade_plugin( string $plugin_file, string $new_version, Automatic_Upgrader_Skin $skin ): void {
 		// Refresh the update_plugins transient so the upgrader can find the package.
 		wp_update_plugins();
@@ -89,6 +101,13 @@ class LBS_Update_Executor {
 		}
 	}
 
+	/**
+	 * Upgrade a theme to the latest available package.
+	 *
+	 * @param string                  $theme_slug  Theme stylesheet slug.
+	 * @param string                  $new_version Requested version string.
+	 * @param Automatic_Upgrader_Skin $skin        Upgrader skin.
+	 */
 	private static function upgrade_theme( string $theme_slug, string $new_version, Automatic_Upgrader_Skin $skin ): void {
 		wp_update_themes();
 
@@ -104,6 +123,12 @@ class LBS_Update_Executor {
 		}
 	}
 
+	/**
+	 * Upgrade WordPress core to the requested version.
+	 *
+	 * @param string                  $new_version Requested version string.
+	 * @param Automatic_Upgrader_Skin $skin        Upgrader skin.
+	 */
 	private static function upgrade_core( string $new_version, Automatic_Upgrader_Skin $skin ): void {
 		require_once ABSPATH . 'wp-admin/includes/update-core.php';
 		$requested_version = trim( $new_version );

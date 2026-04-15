@@ -6,15 +6,34 @@
  *
  * Authenticated via WordPress Application Passwords + HMAC nonce.
  * Schedules a WP-Cron event to run the actual upgrade asynchronously.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Handles authenticated inbound update commands.
+ */
 class LBS_REST_Update_Controller extends WP_REST_Controller {
 
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'lbs/v1';
+
+	/**
+	 * REST route base.
+	 *
+	 * @var string
+	 */
 	protected $rest_base = 'update';
 
+	/**
+	 * Register update route.
+	 */
 	public function register_routes(): void {
 		register_rest_route(
 			$this->namespace,
@@ -31,6 +50,11 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Build REST arg schema for update payload.
+	 *
+	 * @return array<string,mixed>
+	 */
 	private function get_item_args(): array {
 		return array(
 			'type'           => array(
@@ -69,6 +93,12 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Check permissions and verify HMAC for update request.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
 	public function update_permissions_check( $request ): bool|WP_Error {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'rest_forbidden', __( 'Authentication required.', 'load-balanced-sync' ), array( 'status' => 401 ) );
@@ -89,6 +119,12 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		return $this->verify_request_hmac( $request );
 	}
 
+	/**
+	 * Verify signed update payload and replay protections.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
 	private function verify_request_hmac( $request ): bool|WP_Error {
 		$request_ts = (int) $request->get_param( 'request_ts' );
 
@@ -124,7 +160,8 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		}
 
 		// Replay protection: check nonce hasn't been seen recently.
-		$seen       = get_transient( 'lbs_seen_nonces' ) ?: array();
+		$seen       = get_transient( 'lbs_seen_nonces' );
+		$seen       = is_array( $seen ) ? $seen : array();
 		$nonce_hash = md5( $nonce );
 		if ( in_array( $nonce_hash, $seen, true ) ) {
 			return new WP_Error( 'lbs_replay', __( 'Duplicate nonce detected.', 'load-balanced-sync' ), array( 'status' => 400 ) );
@@ -140,7 +177,12 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		return true;
 	}
 
-	/** @return WP_REST_Response|WP_Error */
+	/**
+	 * Accept an update command and queue async execution.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
 	public function update_item( $request ) {
 		$type           = $request->get_param( 'type' );
 		$identifier     = $request->get_param( 'identifier' ) ?? '';

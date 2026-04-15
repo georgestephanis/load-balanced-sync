@@ -6,15 +6,34 @@
  *
  * This endpoint is unauthenticated — it is validated via a one-time
  * invitation token, not application passwords.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Handles inbound pairing handshake requests.
+ */
 class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'lbs/v1';
+
+	/**
+	 * REST route base.
+	 *
+	 * @var string
+	 */
 	protected $rest_base = 'handshake';
 
+	/**
+	 * Register handshake routes.
+	 */
 	public function register_routes(): void {
 		register_rest_route(
 			$this->namespace,
@@ -66,11 +85,18 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Rate-limit handshake attempts.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
 	public function accept_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		// Rate limit: max 5 handshake attempts per IP per 10 minutes.
-		$ip   = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
-		$key  = 'lbs_handshake_rate_' . md5( $ip );
-		$hits = (int) get_transient( $key );
+		$remote_addr = filter_input( INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$ip          = $remote_addr ? sanitize_text_field( wp_unslash( $remote_addr ) ) : '0.0.0.0';
+		$key         = 'lbs_handshake_rate_' . md5( $ip );
+		$hits        = (int) get_transient( $key );
 
 		if ( $hits >= 5 ) {
 			return new WP_Error(
@@ -85,6 +111,12 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 		return true; // Token is the sole auth mechanism.
 	}
 
+	/**
+	 * Accept and process a pairing request.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
 	public function accept_item( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		if ( LBS_Crypto::is_auth_key_placeholder() ) {
 			return new WP_Error(
@@ -98,7 +130,9 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 		$initiating = rtrim( $request->get_param( 'initiating_url' ), '/' );
 		$peer_url   = rtrim( $request->get_param( 'peer_real_url' ), '/' );
 		$peer_group = $request->get_param( 'peer_group' );
-		$peer_label = $request->get_param( 'peer_label' ) ?: parse_url( $peer_url, PHP_URL_HOST );
+		$peer_label = $request->get_param( 'peer_label' )
+			? $request->get_param( 'peer_label' )
+			: wp_parse_url( $peer_url, PHP_URL_HOST );
 		$peer_user  = $request->get_param( 'peer_app_username' );
 		$peer_pass  = $request->get_param( 'peer_app_password' );
 
@@ -179,8 +213,8 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 			'real_url'               => $peer_url,
 			'group_name'             => $peer_group,
 			'app_username'           => $peer_user,
-			'app_password_uuid'      => $app_password_item['uuid'],  // UUID of our app password for them
-			'app_password_encrypted' => $peer_encrypted,             // Their password we use to call them
+			'app_password_uuid'      => $app_password_item['uuid'],  // UUID of our app password for them.
+			'app_password_encrypted' => $peer_encrypted,             // Their password we use to call them.
 			'status'                 => 'active',
 			'last_seen'              => time(),
 			'last_error'             => '',

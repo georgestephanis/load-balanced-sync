@@ -4,6 +4,8 @@
  *
  * Removes all lbs_* options. Does NOT revoke application passwords
  * created on peer sites — the admin must do that manually.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;

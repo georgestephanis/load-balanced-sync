@@ -1,6 +1,8 @@
 <?php
 /**
  * Pairing / invitation tab view.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -9,9 +11,10 @@ $own_url   = LBS_Peer_Registry::get_own_real_url();
 $own_group = LBS_Peer_Registry::get_own_group();
 
 // If we just generated a token, retrieve and display it once.
-$show_token = '';
-if ( ! empty( $_GET['token'] ) ) {
-	$transient_key = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+$show_token  = '';
+$token_param = filter_input( INPUT_GET, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+if ( ! empty( $token_param ) ) {
+	$transient_key = sanitize_text_field( wp_unslash( $token_param ) );
 	$show_token    = get_transient( $transient_key );
 	if ( $show_token ) {
 		delete_transient( $transient_key );

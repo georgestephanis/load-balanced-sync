@@ -1,12 +1,20 @@
 <?php
 /**
  * Listens for WordPress upgrade events and fans updates out to peers.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Dispatches plugin/theme/core updates to configured peers.
+ */
 class LBS_Update_Dispatcher {
 
+	/**
+	 * Register WordPress hooks.
+	 */
 	public function register(): void {
 		// Priority 20 — after WordPress's own cleanup hooks at priority 9.
 		add_action( 'upgrader_process_complete', array( $this, 'on_upgrade_complete' ), 20, 2 );
@@ -61,10 +69,17 @@ class LBS_Update_Dispatcher {
 		}
 	}
 
-	// -----------------------------------------------------------------------
-	// Dispatch helpers
-	// -----------------------------------------------------------------------
+	/**
+	 * Dispatch helper methods.
+	 */
 
+	/**
+	 * Dispatch plugin update notifications.
+	 *
+	 * @param array  $hook_extra Upgrade metadata.
+	 * @param array  $peers      Active peers.
+	 * @param string $own_group  Local group name.
+	 */
 	private function dispatch_plugins( array $hook_extra, array $peers, string $own_group ): void {
 		// Bulk upgrade provides $hook_extra['plugins']; single upgrade uses $hook_extra['plugin'].
 		$plugin_files = ! empty( $hook_extra['plugins'] )
@@ -99,6 +114,13 @@ class LBS_Update_Dispatcher {
 		}
 	}
 
+	/**
+	 * Dispatch theme update notifications.
+	 *
+	 * @param array  $hook_extra Upgrade metadata.
+	 * @param array  $peers      Active peers.
+	 * @param string $own_group  Local group name.
+	 */
 	private function dispatch_themes( array $hook_extra, array $peers, string $own_group ): void {
 		$theme_slugs = ! empty( $hook_extra['themes'] )
 			? (array) $hook_extra['themes']
@@ -124,6 +146,12 @@ class LBS_Update_Dispatcher {
 		}
 	}
 
+	/**
+	 * Dispatch core update notifications.
+	 *
+	 * @param array  $peers     Active peers.
+	 * @param string $own_group Local group name.
+	 */
 	private function dispatch_core( array $peers, string $own_group ): void {
 		$this->schedule_fan_out(
 			array(

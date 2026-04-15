@@ -1,12 +1,20 @@
 <?php
 /**
  * Admin page registration and form handling for Load Balanced Sync.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Registers admin UI and handles admin-post actions.
+ */
 class LBS_Admin {
 
+	/**
+	 * Register admin hooks.
+	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -18,6 +26,9 @@ class LBS_Admin {
 		add_action( 'admin_post_lbs_clear_log', array( $this, 'handle_clear_log' ) );
 	}
 
+	/**
+	 * Register plugin settings page.
+	 */
 	public function register_menu(): void {
 		add_options_page(
 			__( 'Load Balanced Sync', 'load-balanced-sync' ),
@@ -28,6 +39,11 @@ class LBS_Admin {
 		);
 	}
 
+	/**
+	 * Enqueue admin scripts/styles on plugin page.
+	 *
+	 * @param string $hook Current admin page hook suffix.
+	 */
 	public function enqueue_assets( string $hook ): void {
 		if ( 'settings_page_load-balanced-sync' !== $hook ) {
 			return;
@@ -47,13 +63,17 @@ class LBS_Admin {
 		);
 	}
 
+	/**
+	 * Render plugin admin page content.
+	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'load-balanced-sync' ) );
 		}
 
-		$tab  = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'settings';
-		$tabs = array(
+		$tab_param = filter_input( INPUT_GET, 'tab', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$tab       = $tab_param ? sanitize_key( wp_unslash( $tab_param ) ) : 'settings';
+		$tabs      = array(
 			'settings' => __( 'Settings', 'load-balanced-sync' ),
 			'peers'    => __( 'Peers', 'load-balanced-sync' ),
 			'invite'   => __( 'Pairing', 'load-balanced-sync' ),
@@ -90,10 +110,13 @@ class LBS_Admin {
 		echo '</div></div>';
 	}
 
-	// -----------------------------------------------------------------------
-	// Form Handlers
-	// -----------------------------------------------------------------------
+	/**
+	 * Form handlers.
+	 */
 
+	/**
+	 * Handle settings save request.
+	 */
 	public function handle_save_settings(): void {
 		check_admin_referer( 'lbs_save_settings' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -111,7 +134,7 @@ class LBS_Admin {
 
 		LBS_Peer_Registry::save_settings( $settings );
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page'    => 'load-balanced-sync',
@@ -124,6 +147,9 @@ class LBS_Admin {
 		exit;
 	}
 
+	/**
+	 * Handle invitation token generation.
+	 */
 	public function handle_generate_invite(): void {
 		check_admin_referer( 'lbs_generate_invite' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -136,7 +162,7 @@ class LBS_Admin {
 		$transient_key = 'lbs_show_token_' . wp_generate_password( 8, false );
 		set_transient( $transient_key, $result['token'], 120 );
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page'  => 'load-balanced-sync',
@@ -149,6 +175,9 @@ class LBS_Admin {
 		exit;
 	}
 
+	/**
+	 * Handle invitation acceptance submission.
+	 */
 	public function handle_accept_invite(): void {
 		check_admin_referer( 'lbs_accept_invite' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -172,10 +201,13 @@ class LBS_Admin {
 			$args['invite_ok'] = '1';
 		}
 
-		wp_redirect( add_query_arg( $args, admin_url( 'options-general.php' ) ) );
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'options-general.php' ) ) );
 		exit;
 	}
 
+	/**
+	 * Handle manual ping request for a peer.
+	 */
 	public function handle_ping_peer(): void {
 		check_admin_referer( 'lbs_ping_peer' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -195,7 +227,7 @@ class LBS_Admin {
 			}
 		}
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page'   => 'load-balanced-sync',
@@ -208,6 +240,9 @@ class LBS_Admin {
 		exit;
 	}
 
+	/**
+	 * Handle removing a peer from local registry.
+	 */
 	public function handle_remove_peer(): void {
 		check_admin_referer( 'lbs_remove_peer' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -218,7 +253,7 @@ class LBS_Admin {
 		LBS_Peer_Registry::delete_peer( $uuid );
 		LBS_Logger::info( "Removed peer {$uuid}." );
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page'    => 'load-balanced-sync',
@@ -231,6 +266,9 @@ class LBS_Admin {
 		exit;
 	}
 
+	/**
+	 * Handle clearing the plugin log.
+	 */
 	public function handle_clear_log(): void {
 		check_admin_referer( 'lbs_clear_log' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -239,7 +277,7 @@ class LBS_Admin {
 
 		LBS_Logger::clear();
 
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page' => 'load-balanced-sync',

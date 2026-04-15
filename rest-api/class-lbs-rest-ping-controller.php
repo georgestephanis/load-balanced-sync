@@ -5,15 +5,34 @@
  * POST /wp-json/lbs/v1/ping
  *
  * Authenticated via WordPress Application Passwords.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Exposes a ping endpoint for peer liveness checks.
+ */
 class LBS_REST_Ping_Controller extends WP_REST_Controller {
 
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'lbs/v1';
+
+	/**
+	 * REST route base.
+	 *
+	 * @var string
+	 */
 	protected $rest_base = 'ping';
 
+	/**
+	 * Register ping route.
+	 */
 	public function register_routes(): void {
 		register_rest_route(
 			$this->namespace,
@@ -36,6 +55,12 @@ class LBS_REST_Ping_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Check permissions for ping endpoint.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
 	public function ping_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error(
@@ -54,6 +79,12 @@ class LBS_REST_Ping_Controller extends WP_REST_Controller {
 		return true;
 	}
 
+	/**
+	 * Return local health and version details.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
 	public function ping_item( WP_REST_Request $request ): WP_REST_Response {
 		$sender_uuid = $request->get_param( 'sender_uuid' );
 

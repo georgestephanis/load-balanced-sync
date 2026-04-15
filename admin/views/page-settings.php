@@ -2,6 +2,8 @@
 /**
  * Settings tab view.
  *
+ * @package LoadBalancedSync
+ *
  * @var array $settings  Current LBS settings (injected by render_page context).
  */
 
@@ -9,7 +11,8 @@ defined( 'ABSPATH' ) || exit;
 
 $settings = LBS_Peer_Registry::get_settings();
 
-if ( ! empty( $_GET['updated'] ) ) {
+$updated = filter_input( INPUT_GET, 'updated', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+if ( ! empty( $updated ) ) {
 	echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'load-balanced-sync' ) . '</p></div>';
 }
 

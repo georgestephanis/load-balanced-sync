@@ -1,12 +1,20 @@
 <?php
 /**
  * Admin notices for cross-group update events.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Renders plugin-specific admin notices.
+ */
 class LBS_Admin_Notices {
 
+	/**
+	 * Register admin notice hooks.
+	 */
 	public function register(): void {
 		add_action( 'admin_notices', array( $this, 'render_cross_group_notices' ) );
 
@@ -14,6 +22,9 @@ class LBS_Admin_Notices {
 		add_action( 'admin_notices', array( $this, 'render_auth_key_warning' ) );
 	}
 
+	/**
+	 * Render notices for cross-group update events.
+	 */
 	public function render_cross_group_notices(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
@@ -54,6 +65,9 @@ class LBS_Admin_Notices {
 		}
 	}
 
+	/**
+	 * Warn when AUTH_KEY is left at the default placeholder value.
+	 */
 	public function render_auth_key_warning(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;

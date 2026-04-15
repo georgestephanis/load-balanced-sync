@@ -9,6 +9,8 @@
  * Author:      George Stephanis
  * License:     GPL-2.0-or-later
  * Text Domain: load-balanced-sync
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -23,6 +25,10 @@ define( 'LBS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // ---------------------------------------------------------------------------
 
 register_activation_hook( __FILE__, 'lbs_activate' );
+
+/**
+ * Activate plugin defaults and scheduled tasks.
+ */
 function lbs_activate(): void {
 	// Seed default settings if not already present.
 	if ( ! get_option( 'lbs_settings' ) ) {
@@ -60,6 +66,10 @@ function lbs_activate(): void {
 }
 
 register_deactivation_hook( __FILE__, 'lbs_deactivate' );
+
+/**
+ * Unschedule plugin cron hooks.
+ */
 function lbs_deactivate(): void {
 	wp_clear_scheduled_hook( 'lbs_purge_expired_invitations' );
 	wp_clear_scheduled_hook( 'lbs_fan_out_update' );
@@ -71,6 +81,10 @@ function lbs_deactivate(): void {
 // ---------------------------------------------------------------------------
 
 add_action( 'plugins_loaded', 'lbs_init', 1 );
+
+/**
+ * Initialize plugin services and hooks.
+ */
 function lbs_init(): void {
 	// Core includes.
 	require_once LBS_PLUGIN_DIR . 'includes/class-lbs-crypto.php';
@@ -107,6 +121,9 @@ function lbs_init(): void {
 	add_action( 'lbs_execute_update', array( 'LBS_Update_Executor', 'execute' ) );
 }
 
+/**
+ * Register plugin REST API routes.
+ */
 function lbs_register_rest_routes(): void {
 	( new LBS_REST_Handshake_Controller() )->register_routes();
 	( new LBS_REST_Ping_Controller() )->register_routes();

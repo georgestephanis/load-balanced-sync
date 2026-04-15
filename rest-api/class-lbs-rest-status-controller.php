@@ -5,15 +5,34 @@
  * GET /wp-json/lbs/v1/status?type=plugin&identifier=woocommerce/woocommerce.php
  *
  * Authenticated via WordPress Application Passwords.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Exposes component version/status information for peers.
+ */
 class LBS_REST_Status_Controller extends WP_REST_Controller {
 
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'lbs/v1';
+
+	/**
+	 * REST route base.
+	 *
+	 * @var string
+	 */
 	protected $rest_base = 'status';
 
+	/**
+	 * Register status route.
+	 */
 	public function register_routes(): void {
 		register_rest_route(
 			$this->namespace,
@@ -41,6 +60,12 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Check permissions for status endpoint.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
 	public function status_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error( 'rest_forbidden', __( 'Authentication required.', 'load-balanced-sync' ), array( 'status' => 403 ) );
@@ -48,6 +73,12 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		return true;
 	}
 
+	/**
+	 * Return status for requested component type.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
 	public function get_status( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$type       = $request->get_param( 'type' );
 		$identifier = $request->get_param( 'identifier' );
@@ -67,6 +98,12 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		}
 	}
 
+	/**
+	 * Return plugin install/update status.
+	 *
+	 * @param string $plugin_file Plugin basename.
+	 * @return WP_REST_Response|WP_Error
+	 */
 	private function get_plugin_status( string $plugin_file ): WP_REST_Response|WP_Error {
 		if ( ! function_exists( 'get_plugin_data' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -94,6 +131,12 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Return theme install/update status.
+	 *
+	 * @param string $theme_slug Theme slug.
+	 * @return WP_REST_Response|WP_Error
+	 */
 	private function get_theme_status( string $theme_slug ): WP_REST_Response|WP_Error {
 		$theme = wp_get_theme( $theme_slug );
 		if ( ! $theme->exists() ) {
@@ -114,6 +157,11 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Return core install/update status.
+	 *
+	 * @return WP_REST_Response
+	 */
 	private function get_core_status(): WP_REST_Response {
 		$updates          = get_site_transient( 'update_core' );
 		$update_available = ! empty( $updates->updates );

@@ -1,6 +1,8 @@
 <?php
 /**
  * Log tab view.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -34,13 +36,13 @@ $level_labels = array(
 	foreach ( $entries as $entry ) :
 		$ts      = absint( $entry['ts'] ?? 0 );
 		$level   = sanitize_key( $entry['level'] ?? 'info' );
-		$message = esc_html( $entry['message'] ?? '' );
+		$message = $entry['message'] ?? '';
 		$date    = $ts ? wp_date( 'Y-m-d H:i:s', $ts ) : '—';
 		?>
 		<tr class="lbs-log-<?php echo esc_attr( $level ); ?>">
 			<td><code><?php echo esc_html( $date ); ?></code></td>
 			<td><?php echo esc_html( $level_labels[ $level ] ?? $level ); ?></td>
-			<td><?php echo $message; ?></td>
+			<td><?php echo esc_html( $message ); ?></td>
 		</tr>
 	<?php endforeach; ?>
 	</tbody>

@@ -1,10 +1,15 @@
 <?php
 /**
  * Invitation token management for the peer pairing protocol.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Creates, accepts, and purges invitation tokens.
+ */
 class LBS_Invitation {
 
 	// -----------------------------------------------------------------------
@@ -84,7 +89,7 @@ class LBS_Invitation {
 		$admin_user = $users[0];
 
 		// Create an Application Password on this site for Site A.
-		$host          = parse_url( $site_a_url, PHP_URL_HOST );
+		$host          = wp_parse_url( $site_a_url, PHP_URL_HOST );
 		$app_pass_name = 'LBS — ' . $host;
 
 		$app_password_result = WP_Application_Passwords::create_new_application_password(
@@ -109,7 +114,7 @@ class LBS_Invitation {
 				'initiating_url'    => $site_a_url,
 				'peer_real_url'     => $own_url,
 				'peer_group'        => LBS_Peer_Registry::get_own_group(),
-				'peer_label'        => parse_url( $own_url, PHP_URL_HOST ),
+				'peer_label'        => wp_parse_url( $own_url, PHP_URL_HOST ),
 				'peer_app_username' => $admin_user->user_login,
 				'peer_app_password' => $our_new_password,
 			)
@@ -143,10 +148,10 @@ class LBS_Invitation {
 			'uuid'                   => wp_generate_uuid4(),
 			'label'                  => $host,
 			'real_url'               => $site_a_url,
-			'group_name'             => '', // Will be filled by the first ping response
+			'group_name'             => '', // Will be filled by the first ping response.
 			'app_username'           => $site_a_username,
-			'app_password_uuid'      => $our_app_item['uuid'], // Our local app pass UUID (for revocation)
-			'app_password_encrypted' => $site_a_encrypted,    // Site A's password we use to call them
+			'app_password_uuid'      => $our_app_item['uuid'], // Our local app pass UUID (for revocation).
+			'app_password_encrypted' => $site_a_encrypted,    // Site A's password we use to call them.
 			'status'                 => 'active',
 			'last_seen'              => time(),
 			'last_error'             => '',

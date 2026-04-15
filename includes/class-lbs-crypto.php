@@ -5,10 +5,15 @@
  * Uses AES-256-GCM keyed from WordPress AUTH_KEY + AUTH_SALT so that
  * credentials stolen from the database are useless without the matching
  * wp-config.php.
+ *
+ * @package LoadBalancedSync
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Provides encryption and HMAC helpers for peer credentials and requests.
+ */
 class LBS_Crypto {
 
 	private const CIPHER  = 'aes-256-gcm';
@@ -33,7 +38,7 @@ class LBS_Crypto {
 	/**
 	 * Encrypts a plaintext string.
 	 *
-	 * @param string $plaintext
+	 * @param string $plaintext Plaintext content.
 	 * @return string  Base64-encoded blob: IV(12) + ciphertext + tag(16).
 	 * @throws RuntimeException When OpenSSL fails.
 	 */
@@ -56,6 +61,7 @@ class LBS_Crypto {
 			throw new RuntimeException( 'LBS_Crypto: openssl_encrypt failed.' );
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required to store binary ciphertext safely.
 		return base64_encode( $iv . $ciphertext . $tag );
 	}
 
@@ -66,6 +72,7 @@ class LBS_Crypto {
 	 * @return string|WP_Error  Plaintext on success, WP_Error on failure.
 	 */
 	public static function decrypt( string $blob ): string|WP_Error {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Required to decode stored ciphertext blob.
 		$raw = base64_decode( $blob, true );
 		if ( false === $raw || strlen( $raw ) < self::IV_LEN + self::TAG_LEN + 1 ) {
 			return new WP_Error( 'lbs_decrypt_invalid', 'Invalid ciphertext blob.' );
