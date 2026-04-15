@@ -26,13 +26,40 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 					'permission_callback' => array( $this, 'accept_permissions_check' ),
 					'show_in_index'       => false,
 					'args'                => array(
-						'token'            => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
-						'initiating_url'   => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_url' ),
-						'peer_real_url'    => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_url' ),
-						'peer_group'       => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
-						'peer_label'       => array( 'type' => 'string', 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
-						'peer_app_username'=> array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
-						'peer_app_password'=> array( 'type' => 'string', 'required' => true ),
+						'token'             => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'initiating_url'    => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_url',
+						),
+						'peer_real_url'     => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_url',
+						),
+						'peer_group'        => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'peer_label'        => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'peer_app_username' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'peer_app_password' => array(
+							'type'     => 'string',
+							'required' => true,
+						),
 					),
 				),
 			)
@@ -41,8 +68,8 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 
 	public function accept_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		// Rate limit: max 5 handshake attempts per IP per 10 minutes.
-		$ip  = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
-		$key = 'lbs_handshake_rate_' . md5( $ip );
+		$ip   = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+		$key  = 'lbs_handshake_rate_' . md5( $ip );
 		$hits = (int) get_transient( $key );
 
 		if ( $hits >= 5 ) {
@@ -67,13 +94,13 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 			);
 		}
 
-		$token       = $request->get_param( 'token' );
-		$initiating  = rtrim( $request->get_param( 'initiating_url' ), '/' );
-		$peer_url    = rtrim( $request->get_param( 'peer_real_url' ), '/' );
-		$peer_group  = $request->get_param( 'peer_group' );
-		$peer_label  = $request->get_param( 'peer_label' ) ?: parse_url( $peer_url, PHP_URL_HOST );
-		$peer_user   = $request->get_param( 'peer_app_username' );
-		$peer_pass   = $request->get_param( 'peer_app_password' );
+		$token      = $request->get_param( 'token' );
+		$initiating = rtrim( $request->get_param( 'initiating_url' ), '/' );
+		$peer_url   = rtrim( $request->get_param( 'peer_real_url' ), '/' );
+		$peer_group = $request->get_param( 'peer_group' );
+		$peer_label = $request->get_param( 'peer_label' ) ?: parse_url( $peer_url, PHP_URL_HOST );
+		$peer_user  = $request->get_param( 'peer_app_username' );
+		$peer_pass  = $request->get_param( 'peer_app_password' );
 
 		// Validate that this request is actually for us.
 		$own_url = LBS_Peer_Registry::get_own_real_url();
@@ -163,21 +190,26 @@ class LBS_REST_Handshake_Controller extends WP_REST_Controller {
 		LBS_Peer_Registry::save_peer( $peer_record );
 		LBS_Logger::info( "Paired with new peer: {$peer_url} (group: {$peer_group})." );
 
-		return new WP_REST_Response( array(
-			'status'       => 'paired',
-			'app_username' => $admin_user->user_login,
-			'app_password' => $new_password,  // Plaintext, sent once over HTTPS.
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'status'       => 'paired',
+				'app_username' => $admin_user->user_login,
+				'app_password' => $new_password,  // Plaintext, sent once over HTTPS.
+			),
+			200
+		);
 	}
 
 	/**
 	 * Returns the first administrator-role user.
 	 */
 	private static function get_admin_user(): WP_User|false {
-		$users = get_users( array(
-			'role'   => 'administrator',
-			'number' => 1,
-		) );
+		$users = get_users(
+			array(
+				'role'   => 'administrator',
+				'number' => 1,
+			)
+		);
 		return $users[0] ?? false;
 	}
 }

@@ -30,12 +30,13 @@ $level_labels = array(
 		</tr>
 	</thead>
 	<tbody>
-	<?php foreach ( $entries as $entry ) :
+	<?php
+	foreach ( $entries as $entry ) :
 		$ts      = absint( $entry['ts'] ?? 0 );
 		$level   = sanitize_key( $entry['level'] ?? 'info' );
 		$message = esc_html( $entry['message'] ?? '' );
 		$date    = $ts ? wp_date( 'Y-m-d H:i:s', $ts ) : '—';
-	?>
+		?>
 		<tr class="lbs-log-<?php echo esc_attr( $level ); ?>">
 			<td><code><?php echo esc_html( $date ); ?></code></td>
 			<td><?php echo esc_html( $level_labels[ $level ] ?? $level ); ?></td>

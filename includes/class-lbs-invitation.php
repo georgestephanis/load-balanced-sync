@@ -72,7 +72,12 @@ class LBS_Invitation {
 		}
 
 		// Find an administrator user to create the app password for.
-		$users = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
+		$users = get_users(
+			array(
+				'role'   => 'administrator',
+				'number' => 1,
+			)
+		);
 		if ( empty( $users ) ) {
 			return new WP_Error( 'lbs_no_admin', 'No administrator user found.' );
 		}
@@ -97,15 +102,18 @@ class LBS_Invitation {
 		$http    = new LBS_HTTP_Client();
 		$own_url = LBS_Peer_Registry::get_own_real_url();
 
-		$response = $http->send_handshake( $site_a_url, array(
-			'token'             => $raw_token,
-			'initiating_url'    => $site_a_url,
-			'peer_real_url'     => $own_url,
-			'peer_group'        => LBS_Peer_Registry::get_own_group(),
-			'peer_label'        => parse_url( $own_url, PHP_URL_HOST ),
-			'peer_app_username' => $admin_user->user_login,
-			'peer_app_password' => $our_new_password,
-		) );
+		$response = $http->send_handshake(
+			$site_a_url,
+			array(
+				'token'             => $raw_token,
+				'initiating_url'    => $site_a_url,
+				'peer_real_url'     => $own_url,
+				'peer_group'        => LBS_Peer_Registry::get_own_group(),
+				'peer_label'        => parse_url( $own_url, PHP_URL_HOST ),
+				'peer_app_username' => $admin_user->user_login,
+				'peer_app_password' => $our_new_password,
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
 			// Clean up the app password we created since the handshake failed.
@@ -170,15 +178,18 @@ class LBS_Invitation {
 		$invitations = get_option( 'lbs_pending_invitations', array() );
 		$now         = time();
 
-		$clean = array_filter( $invitations, function ( $inv ) use ( $now ) {
-			if ( $inv['used'] ?? false ) {
-				return false;
+		$clean = array_filter(
+			$invitations,
+			function ( $inv ) use ( $now ) {
+				if ( $inv['used'] ?? false ) {
+					return false;
+				}
+				if ( ( $inv['expires_at'] ?? 0 ) < $now ) {
+					return false;
+				}
+				return true;
 			}
-			if ( ( $inv['expires_at'] ?? 0 ) < $now ) {
-				return false;
-			}
-			return true;
-		} );
+		);
 
 		update_option( 'lbs_pending_invitations', array_values( $clean ), false );
 	}

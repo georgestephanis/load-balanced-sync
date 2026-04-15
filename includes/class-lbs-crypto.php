@@ -11,10 +11,10 @@ defined( 'ABSPATH' ) || exit;
 
 class LBS_Crypto {
 
-	private const CIPHER    = 'aes-256-gcm';
-	private const IV_LEN    = 12;
-	private const TAG_LEN   = 16;
-	private const CONTEXT   = 'lbs_peer_credentials';
+	private const CIPHER  = 'aes-256-gcm';
+	private const IV_LEN  = 12;
+	private const TAG_LEN = 16;
+	private const CONTEXT = 'lbs_peer_credentials';
 
 	/**
 	 * Returns the 32-byte encryption key derived from AUTH_KEY + AUTH_SALT.
@@ -102,13 +102,16 @@ class LBS_Crypto {
 	 * @return string
 	 */
 	public static function build_update_nonce( array $payload, string $key ): string {
-		$message = implode( '|', array(
-			$payload['type'],
-			$payload['identifier'] ?? '',
-			$payload['new_version'] ?? '',
-			$payload['initiator_uuid'],
-			(string) $payload['request_ts'],
-		) );
+		$message = implode(
+			'|',
+			array(
+				$payload['type'],
+				$payload['identifier'] ?? '',
+				$payload['new_version'] ?? '',
+				$payload['initiator_uuid'],
+				(string) $payload['request_ts'],
+			)
+		);
 		return hash_hmac( 'sha256', $message, $key );
 	}
 

@@ -16,7 +16,7 @@ class LBS_Update_Dispatcher {
 	 * Called by WordPress after any upgrade process completes.
 	 *
 	 * @param WP_Upgrader $upgrader    The upgrader instance.
-	 * @param array        $hook_extra Data describing what was upgraded.
+	 * @param array       $hook_extra Data describing what was upgraded.
 	 */
 	public function on_upgrade_complete( WP_Upgrader $upgrader, array $hook_extra ): void {
 		// Guard: if we are processing a peer-triggered update, do nothing —
@@ -87,11 +87,15 @@ class LBS_Update_Dispatcher {
 			$data    = get_plugin_data( $plugin_path, false, false );
 			$version = $data['Version'] ?? '0';
 
-			$this->schedule_fan_out( array(
-				'type'        => 'plugin',
-				'identifier'  => $plugin_file,
-				'new_version' => $version,
-			), $peers, $own_group );
+			$this->schedule_fan_out(
+				array(
+					'type'        => 'plugin',
+					'identifier'  => $plugin_file,
+					'new_version' => $version,
+				),
+				$peers,
+				$own_group
+			);
 		}
 	}
 
@@ -108,20 +112,28 @@ class LBS_Update_Dispatcher {
 			$theme   = wp_get_theme( $slug );
 			$version = $theme->exists() ? $theme->get( 'Version' ) : '0';
 
-			$this->schedule_fan_out( array(
-				'type'        => 'theme',
-				'identifier'  => $slug,
-				'new_version' => $version,
-			), $peers, $own_group );
+			$this->schedule_fan_out(
+				array(
+					'type'        => 'theme',
+					'identifier'  => $slug,
+					'new_version' => $version,
+				),
+				$peers,
+				$own_group
+			);
 		}
 	}
 
 	private function dispatch_core( array $peers, string $own_group ): void {
-		$this->schedule_fan_out( array(
-			'type'        => 'core',
-			'identifier'  => '',
-			'new_version' => get_bloginfo( 'version' ),
-		), $peers, $own_group );
+		$this->schedule_fan_out(
+			array(
+				'type'        => 'core',
+				'identifier'  => '',
+				'new_version' => get_bloginfo( 'version' ),
+			),
+			$peers,
+			$own_group
+		);
 	}
 
 	/**
@@ -152,17 +164,35 @@ class LBS_Update_Dispatcher {
 		}
 
 		if ( ! empty( $same_group_uuids ) ) {
-			wp_schedule_single_event( time() + 1, 'lbs_fan_out_update', array( array_merge( $base_payload, array(
-				'notify_only' => false,
-				'peers'       => $same_group_uuids,
-			) ) ) );
+			wp_schedule_single_event(
+				time() + 1,
+				'lbs_fan_out_update',
+				array(
+					array_merge(
+						$base_payload,
+						array(
+							'notify_only' => false,
+							'peers'       => $same_group_uuids,
+						)
+					),
+				)
+			);
 		}
 
 		if ( ! empty( $cross_group_uuids ) ) {
-			wp_schedule_single_event( time() + 1, 'lbs_fan_out_update', array( array_merge( $base_payload, array(
-				'notify_only' => true,
-				'peers'       => $cross_group_uuids,
-			) ) ) );
+			wp_schedule_single_event(
+				time() + 1,
+				'lbs_fan_out_update',
+				array(
+					array_merge(
+						$base_payload,
+						array(
+							'notify_only' => true,
+							'peers'       => $cross_group_uuids,
+						)
+					),
+				)
+			);
 		}
 	}
 

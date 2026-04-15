@@ -43,10 +43,13 @@ class LBS_Admin_Notices {
 
 			printf(
 				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
-				wp_kses( $message, array(
-					'strong' => array(),
-					'code'   => array(),
-				) )
+				wp_kses(
+					$message,
+					array(
+						'strong' => array(),
+						'code'   => array(),
+					)
+				)
 			);
 		}
 	}
@@ -68,11 +71,18 @@ class LBS_Admin_Notices {
 
 		printf(
 			'<div class="notice notice-error"><p>%s</p></div>',
-			wp_kses( $message, array(
-				'strong' => array(),
-				'code'   => array(),
-				'a'      => array( 'href' => array(), 'target' => array(), 'rel' => array() ),
-			) )
+			wp_kses(
+				$message,
+				array(
+					'strong' => array(),
+					'code'   => array(),
+					'a'      => array(
+						'href'   => array(),
+						'target' => array(),
+						'rel'    => array(),
+					),
+				)
+			)
 		);
 	}
 }

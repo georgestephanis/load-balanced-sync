@@ -33,13 +33,39 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 
 	private function get_item_args(): array {
 		return array(
-			'type'           => array( 'type' => 'string', 'required' => true, 'enum' => array( 'plugin', 'theme', 'core' ) ),
-			'identifier'     => array( 'type' => 'string', 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
-			'new_version'    => array( 'type' => 'string', 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
-			'notify_only'    => array( 'type' => 'boolean', 'required' => false, 'default' => false ),
-			'initiator_uuid' => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
-			'nonce'          => array( 'type' => 'string', 'required' => true ),
-			'request_ts'     => array( 'type' => 'integer', 'required' => true ),
+			'type'           => array(
+				'type'     => 'string',
+				'required' => true,
+				'enum'     => array( 'plugin', 'theme', 'core' ),
+			),
+			'identifier'     => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'new_version'    => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'notify_only'    => array(
+				'type'     => 'boolean',
+				'required' => false,
+				'default'  => false,
+			),
+			'initiator_uuid' => array(
+				'type'              => 'string',
+				'required'          => true,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'nonce'          => array(
+				'type'     => 'string',
+				'required' => true,
+			),
+			'request_ts'     => array(
+				'type'     => 'integer',
+				'required' => true,
+			),
 		);
 	}
 
@@ -98,7 +124,7 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 		}
 
 		// Replay protection: check nonce hasn't been seen recently.
-		$seen = get_transient( 'lbs_seen_nonces' ) ?: array();
+		$seen       = get_transient( 'lbs_seen_nonces' ) ?: array();
 		$nonce_hash = md5( $nonce );
 		if ( in_array( $nonce_hash, $seen, true ) ) {
 			return new WP_Error( 'lbs_replay', __( 'Duplicate nonce detected.', 'load-balanced-sync' ), array( 'status' => 400 ) );
@@ -126,14 +152,16 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 
 		if ( $notify_only ) {
 			// Cross-group: just store a notice for the admin.
-			LBS_Peer_Registry::add_notice( array(
-				'type'        => $type,
-				'identifier'  => $identifier,
-				'new_version' => $new_version,
-				'source_url'  => $peer['real_url'] ?? '',
-				'source_group'=> $peer['group_name'] ?? '',
-				'received_at' => time(),
-			) );
+			LBS_Peer_Registry::add_notice(
+				array(
+					'type'         => $type,
+					'identifier'   => $identifier,
+					'new_version'  => $new_version,
+					'source_url'   => $peer['real_url'] ?? '',
+					'source_group' => $peer['group_name'] ?? '',
+					'received_at'  => time(),
+				)
+			);
 			LBS_Logger::info( "Received cross-group update notice: {$type} {$identifier} → {$new_version} from {$peer['real_url']}." );
 
 			return new WP_REST_Response( array( 'status' => 'noticed' ), 200 );
@@ -146,18 +174,27 @@ class LBS_REST_Update_Controller extends WP_REST_Controller {
 
 		// Schedule the upgrade asynchronously (avoids HTTP timeout for large packages).
 		$job_id = wp_generate_uuid4();
-		wp_schedule_single_event( time() + 1, 'lbs_execute_update', array( array(
-			'type'        => $type,
-			'identifier'  => $identifier,
-			'new_version' => $new_version,
-			'job_id'      => $job_id,
-		) ) );
+		wp_schedule_single_event(
+			time() + 1,
+			'lbs_execute_update',
+			array(
+				array(
+					'type'        => $type,
+					'identifier'  => $identifier,
+					'new_version' => $new_version,
+					'job_id'      => $job_id,
+				),
+			)
+		);
 
 		LBS_Logger::info( "Accepted update command: {$type} {$identifier} → {$new_version}. Job: {$job_id}." );
 
-		return new WP_REST_Response( array(
-			'status' => 'accepted',
-			'job_id' => $job_id,
-		), 202 );
+		return new WP_REST_Response(
+			array(
+				'status' => 'accepted',
+				'job_id' => $job_id,
+			),
+			202
+		);
 	}
 }

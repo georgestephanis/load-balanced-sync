@@ -25,8 +25,16 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 					'permission_callback' => array( $this, 'status_permissions_check' ),
 					'show_in_index'       => false,
 					'args'                => array(
-						'type'       => array( 'type' => 'string', 'required' => true, 'enum' => array( 'plugin', 'theme', 'core' ) ),
-						'identifier' => array( 'type' => 'string', 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
+						'type'       => array(
+							'type'     => 'string',
+							'required' => true,
+							'enum'     => array( 'plugin', 'theme', 'core' ),
+						),
+						'identifier' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
 					),
 				),
 			)
@@ -72,15 +80,18 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 		$data = get_plugin_data( $plugin_path, false, false );
 
 		// Check if update is available.
-		$updates         = get_site_transient( 'update_plugins' );
+		$updates          = get_site_transient( 'update_plugins' );
 		$update_available = isset( $updates->response[ $plugin_file ] );
 
-		return new WP_REST_Response( array(
-			'type'             => 'plugin',
-			'identifier'       => $plugin_file,
-			'version'          => $data['Version'] ?? '0',
-			'update_available' => $update_available,
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'type'             => 'plugin',
+				'identifier'       => $plugin_file,
+				'version'          => $data['Version'] ?? '0',
+				'update_available' => $update_available,
+			),
+			200
+		);
 	}
 
 	private function get_theme_status( string $theme_slug ): WP_REST_Response|WP_Error {
@@ -89,26 +100,32 @@ class LBS_REST_Status_Controller extends WP_REST_Controller {
 			return new WP_Error( 'lbs_theme_not_found', __( 'Theme not found.', 'load-balanced-sync' ), array( 'status' => 404 ) );
 		}
 
-		$updates         = get_site_transient( 'update_themes' );
+		$updates          = get_site_transient( 'update_themes' );
 		$update_available = isset( $updates->response[ $theme_slug ] );
 
-		return new WP_REST_Response( array(
-			'type'             => 'theme',
-			'identifier'       => $theme_slug,
-			'version'          => $theme->get( 'Version' ) ?? '0',
-			'update_available' => $update_available,
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'type'             => 'theme',
+				'identifier'       => $theme_slug,
+				'version'          => $theme->get( 'Version' ) ?? '0',
+				'update_available' => $update_available,
+			),
+			200
+		);
 	}
 
 	private function get_core_status(): WP_REST_Response {
-		$updates         = get_site_transient( 'update_core' );
+		$updates          = get_site_transient( 'update_core' );
 		$update_available = ! empty( $updates->updates );
 
-		return new WP_REST_Response( array(
-			'type'             => 'core',
-			'identifier'       => '',
-			'version'          => get_bloginfo( 'version' ),
-			'update_available' => $update_available,
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'type'             => 'core',
+				'identifier'       => '',
+				'version'          => get_bloginfo( 'version' ),
+				'update_available' => $update_available,
+			),
+			200
+		);
 	}
 }

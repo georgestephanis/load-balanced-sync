@@ -25,7 +25,11 @@ class LBS_REST_Ping_Controller extends WP_REST_Controller {
 					'permission_callback' => array( $this, 'ping_permissions_check' ),
 					'show_in_index'       => false,
 					'args'                => array(
-						'sender_uuid' => array( 'type' => 'string', 'required' => false, 'sanitize_callback' => 'sanitize_text_field' ),
+						'sender_uuid' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
 					),
 				),
 			)
@@ -61,12 +65,15 @@ class LBS_REST_Ping_Controller extends WP_REST_Controller {
 			}
 		}
 
-		return new WP_REST_Response( array(
-			'status'     => 'ok',
-			'site_url'   => LBS_Peer_Registry::get_own_real_url(),
-			'group'      => LBS_Peer_Registry::get_own_group(),
-			'ts'         => time(),
-			'wp_version' => get_bloginfo( 'version' ),
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'status'     => 'ok',
+				'site_url'   => LBS_Peer_Registry::get_own_real_url(),
+				'group'      => LBS_Peer_Registry::get_own_group(),
+				'ts'         => time(),
+				'wp_version' => get_bloginfo( 'version' ),
+			),
+			200
+		);
 	}
 }

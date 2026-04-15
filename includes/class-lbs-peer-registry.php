@@ -12,11 +12,14 @@ class LBS_Peer_Registry {
 	// -----------------------------------------------------------------------
 
 	public static function get_settings(): array {
-		return wp_parse_args( get_option( 'lbs_settings', array() ), array(
-			'group_name'   => 'production',
-			'own_real_url' => get_site_url(),
-			'sync_enabled' => true,
-		) );
+		return wp_parse_args(
+			get_option( 'lbs_settings', array() ),
+			array(
+				'group_name'   => 'production',
+				'own_real_url' => get_site_url(),
+				'sync_enabled' => true,
+			)
+		);
 	}
 
 	public static function save_settings( array $settings ): void {
@@ -101,20 +104,24 @@ class LBS_Peer_Registry {
 	}
 
 	public static function mark_peer_seen( string $uuid ): void {
-		self::save_peer( array(
-			'uuid'       => $uuid,
-			'status'     => 'active',
-			'last_seen'  => time(),
-			'last_error' => '',
-		) );
+		self::save_peer(
+			array(
+				'uuid'       => $uuid,
+				'status'     => 'active',
+				'last_seen'  => time(),
+				'last_error' => '',
+			)
+		);
 	}
 
 	public static function mark_peer_error( string $uuid, string $error ): void {
-		self::save_peer( array(
-			'uuid'       => $uuid,
-			'status'     => 'error',
-			'last_error' => $error,
-		) );
+		self::save_peer(
+			array(
+				'uuid'       => $uuid,
+				'status'     => 'error',
+				'last_error' => $error,
+			)
+		);
 	}
 
 	// -----------------------------------------------------------------------

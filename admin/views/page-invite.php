@@ -25,17 +25,21 @@ if ( ! empty( $_GET['token'] ) ) {
 		<?php esc_html_e( 'Generate a one-time token on this site, then go to the peer site and enter this site\'s Real URL plus the token in the "Accept Invitation" form below.', 'load-balanced-sync' ); ?>
 	</p>
 	<p>
-		<?php printf(
+		<?php
+		printf(
 			/* translators: %s: this site's real URL */
 			esc_html__( 'This site\'s Real URL: %s', 'load-balanced-sync' ),
 			'<code>' . esc_html( $own_url ) . '</code>'
-		); ?>
+		);
+		?>
 		<br>
-		<?php printf(
+		<?php
+		printf(
 			/* translators: %s: this site's group name */
 			esc_html__( 'Group: %s', 'load-balanced-sync' ),
 			'<code>' . esc_html( $own_group ) . '</code>'
-		); ?>
+		);
+		?>
 	</p>
 
 	<?php if ( $show_token ) : ?>

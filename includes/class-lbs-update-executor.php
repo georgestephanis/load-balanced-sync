@@ -140,7 +140,7 @@ class LBS_Update_Executor {
 		$result   = $upgrader->upgrade( $target, array( 'attempt_rollback' => true ) );
 
 		if ( is_wp_error( $result ) ) {
-			LBS_Logger::error( "Core upgrade failed: " . $result->get_error_message() );
+			LBS_Logger::error( 'Core upgrade failed: ' . $result->get_error_message() );
 		} else {
 			LBS_Logger::info( "Core upgraded to {$target->version} successfully." );
 		}

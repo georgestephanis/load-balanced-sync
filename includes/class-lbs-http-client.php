@@ -64,10 +64,13 @@ class LBS_HTTP_Client {
 		$request_ts = time();
 		$nonce      = LBS_Crypto::build_update_nonce( array_merge( $payload, array( 'request_ts' => $request_ts ) ), $app_password );
 
-		$body = array_merge( $payload, array(
-			'request_ts' => $request_ts,
-			'nonce'      => $nonce,
-		) );
+		$body = array_merge(
+			$payload,
+			array(
+				'request_ts' => $request_ts,
+				'nonce'      => $nonce,
+			)
+		);
 
 		$url = trailingslashit( $peer['real_url'] ) . 'wp-json/lbs/v1/update';
 
@@ -84,7 +87,10 @@ class LBS_HTTP_Client {
 	 */
 	public function get_peer_status( array $peer, string $type, string $identifier = '' ): array|WP_Error {
 		$url = add_query_arg(
-			array( 'type' => $type, 'identifier' => $identifier ),
+			array(
+				'type'       => $type,
+				'identifier' => $identifier,
+			),
 			trailingslashit( $peer['real_url'] ) . 'wp-json/lbs/v1/status'
 		);
 
@@ -137,15 +143,18 @@ class LBS_HTTP_Client {
 		$host = parse_url( $url, PHP_URL_HOST );
 		$this->allow_host( $host );
 
-		$response = wp_remote_post( $url, array(
-			'timeout'     => self::TIMEOUT,
-			'headers'     => array_merge(
-				array( 'Content-Type' => 'application/json' ),
-				$extra_headers
-			),
-			'body'        => wp_json_encode( $body ),
-			'data_format' => 'body',
-		) );
+		$response = wp_remote_post(
+			$url,
+			array(
+				'timeout'     => self::TIMEOUT,
+				'headers'     => array_merge(
+					array( 'Content-Type' => 'application/json' ),
+					$extra_headers
+				),
+				'body'        => wp_json_encode( $body ),
+				'data_format' => 'body',
+			)
+		);
 
 		$this->disallow_host( $host );
 
@@ -159,10 +168,13 @@ class LBS_HTTP_Client {
 		$host = parse_url( $url, PHP_URL_HOST );
 		$this->allow_host( $host );
 
-		$response = wp_remote_get( $url, array(
-			'timeout' => self::TIMEOUT,
-			'headers' => $extra_headers,
-		) );
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => self::TIMEOUT,
+				'headers' => $extra_headers,
+			)
+		);
 
 		$this->disallow_host( $host );
 

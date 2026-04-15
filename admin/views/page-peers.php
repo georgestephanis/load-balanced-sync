@@ -39,7 +39,15 @@ if ( ! empty( $_GET['pinged'] ) ) {
 	printf(
 		/* translators: %s: link to pairing tab */
 		esc_html__( 'Manage peer sites below. To add a new peer, go to the %s tab.', 'load-balanced-sync' ),
-		'<a href="' . esc_url( add_query_arg( array( 'page' => 'load-balanced-sync', 'tab' => 'invite' ), admin_url( 'options-general.php' ) ) ) . '">' . esc_html__( 'Pairing', 'load-balanced-sync' ) . '</a>'
+		'<a href="' . esc_url(
+			add_query_arg(
+				array(
+					'page' => 'load-balanced-sync',
+					'tab'  => 'invite',
+				),
+				admin_url( 'options-general.php' )
+			)
+		) . '">' . esc_html__( 'Pairing', 'load-balanced-sync' ) . '</a>'
 	);
 	?>
 </p>
@@ -59,7 +67,8 @@ if ( ! empty( $_GET['pinged'] ) ) {
 		</tr>
 	</thead>
 	<tbody>
-	<?php foreach ( $peers as $peer ) :
+	<?php
+	foreach ( $peers as $peer ) :
 		$uuid       = esc_attr( $peer['uuid'] ?? '' );
 		$label      = esc_html( $peer['label'] ?? $peer['real_url'] ?? '—' );
 		$group      = esc_html( $peer['group_name'] ?? '—' );
@@ -75,7 +84,7 @@ if ( ! empty( $_GET['pinged'] ) ) {
 			default   => $status,
 		};
 		$status_class = 'lbs-status-' . esc_attr( $status );
-	?>
+		?>
 		<tr>
 			<td><?php echo $label; ?></td>
 			<td><?php echo $group; ?></td>

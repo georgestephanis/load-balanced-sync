@@ -13,10 +13,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'LBS_VERSION',     '1.0.0' );
+define( 'LBS_VERSION', '1.0.0' );
 define( 'LBS_PLUGIN_FILE', __FILE__ );
-define( 'LBS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
-define( 'LBS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
+define( 'LBS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'LBS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // ---------------------------------------------------------------------------
 // Activation / Deactivation
@@ -26,11 +26,15 @@ register_activation_hook( __FILE__, 'lbs_activate' );
 function lbs_activate(): void {
 	// Seed default settings if not already present.
 	if ( ! get_option( 'lbs_settings' ) ) {
-		update_option( 'lbs_settings', array(
-			'group_name'   => 'production',
-			'own_real_url' => get_site_url(),
-			'sync_enabled' => true,
-		), false );
+		update_option(
+			'lbs_settings',
+			array(
+				'group_name'   => 'production',
+				'own_real_url' => get_site_url(),
+				'sync_enabled' => true,
+			),
+			false
+		);
 	}
 
 	if ( false === get_option( 'lbs_peers' ) ) {
@@ -99,8 +103,8 @@ function lbs_init(): void {
 
 	// Cron event handlers.
 	add_action( 'lbs_purge_expired_invitations', array( 'LBS_Invitation', 'purge_expired' ) );
-	add_action( 'lbs_fan_out_update',            array( 'LBS_Update_Dispatcher', 'fan_out' ) );
-	add_action( 'lbs_execute_update',            array( 'LBS_Update_Executor', 'execute' ) );
+	add_action( 'lbs_fan_out_update', array( 'LBS_Update_Dispatcher', 'fan_out' ) );
+	add_action( 'lbs_execute_update', array( 'LBS_Update_Executor', 'execute' ) );
 }
 
 function lbs_register_rest_routes(): void {

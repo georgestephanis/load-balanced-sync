@@ -9,8 +9,8 @@ defined( 'ABSPATH' ) || exit;
 
 class LBS_Logger {
 
-	private const OPTION  = 'lbs_log';
-	private const MAX     = 200;
+	private const OPTION = 'lbs_log';
+	private const MAX    = 200;
 
 	public static function info( string $message ): void {
 		self::append( 'info', $message );

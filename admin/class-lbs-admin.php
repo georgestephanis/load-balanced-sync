@@ -8,14 +8,14 @@ defined( 'ABSPATH' ) || exit;
 class LBS_Admin {
 
 	public function register(): void {
-		add_action( 'admin_menu',          array( $this, 'register_menu' ) );
+		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_post_lbs_save_settings',  array( $this, 'handle_save_settings' ) );
+		add_action( 'admin_post_lbs_save_settings', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_post_lbs_generate_invite', array( $this, 'handle_generate_invite' ) );
-		add_action( 'admin_post_lbs_accept_invite',  array( $this, 'handle_accept_invite' ) );
-		add_action( 'admin_post_lbs_ping_peer',      array( $this, 'handle_ping_peer' ) );
-		add_action( 'admin_post_lbs_remove_peer',    array( $this, 'handle_remove_peer' ) );
-		add_action( 'admin_post_lbs_clear_log',      array( $this, 'handle_clear_log' ) );
+		add_action( 'admin_post_lbs_accept_invite', array( $this, 'handle_accept_invite' ) );
+		add_action( 'admin_post_lbs_ping_peer', array( $this, 'handle_ping_peer' ) );
+		add_action( 'admin_post_lbs_remove_peer', array( $this, 'handle_remove_peer' ) );
+		add_action( 'admin_post_lbs_clear_log', array( $this, 'handle_clear_log' ) );
 	}
 
 	public function register_menu(): void {
@@ -66,7 +66,13 @@ class LBS_Admin {
 		// Tab nav.
 		echo '<nav class="nav-tab-wrapper">';
 		foreach ( $tabs as $key => $label ) {
-			$url    = add_query_arg( array( 'page' => 'load-balanced-sync', 'tab' => $key ), admin_url( 'options-general.php' ) );
+			$url    = add_query_arg(
+				array(
+					'page' => 'load-balanced-sync',
+					'tab'  => $key,
+				),
+				admin_url( 'options-general.php' )
+			);
 			$active = ( $tab === $key ) ? ' nav-tab-active' : '';
 			printf( '<a href="%s" class="nav-tab%s">%s</a>', esc_url( $url ), esc_attr( $active ), esc_html( $label ) );
 		}
@@ -105,11 +111,16 @@ class LBS_Admin {
 
 		LBS_Peer_Registry::save_settings( $settings );
 
-		wp_redirect( add_query_arg( array(
-			'page'    => 'load-balanced-sync',
-			'tab'     => 'settings',
-			'updated' => '1',
-		), admin_url( 'options-general.php' ) ) );
+		wp_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'load-balanced-sync',
+					'tab'     => 'settings',
+					'updated' => '1',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 
@@ -125,11 +136,16 @@ class LBS_Admin {
 		$transient_key = 'lbs_show_token_' . wp_generate_password( 8, false );
 		set_transient( $transient_key, $result['token'], 120 );
 
-		wp_redirect( add_query_arg( array(
-			'page'  => 'load-balanced-sync',
-			'tab'   => 'invite',
-			'token' => $transient_key,
-		), admin_url( 'options-general.php' ) ) );
+		wp_redirect(
+			add_query_arg(
+				array(
+					'page'  => 'load-balanced-sync',
+					'tab'   => 'invite',
+					'token' => $transient_key,
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 
@@ -179,11 +195,16 @@ class LBS_Admin {
 			}
 		}
 
-		wp_redirect( add_query_arg( array(
-			'page' => 'load-balanced-sync',
-			'tab'  => 'peers',
-			'pinged' => $uuid,
-		), admin_url( 'options-general.php' ) ) );
+		wp_redirect(
+			add_query_arg(
+				array(
+					'page'   => 'load-balanced-sync',
+					'tab'    => 'peers',
+					'pinged' => $uuid,
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 
@@ -197,11 +218,16 @@ class LBS_Admin {
 		LBS_Peer_Registry::delete_peer( $uuid );
 		LBS_Logger::info( "Removed peer {$uuid}." );
 
-		wp_redirect( add_query_arg( array(
-			'page'    => 'load-balanced-sync',
-			'tab'     => 'peers',
-			'removed' => '1',
-		), admin_url( 'options-general.php' ) ) );
+		wp_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'load-balanced-sync',
+					'tab'     => 'peers',
+					'removed' => '1',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 
@@ -213,10 +239,15 @@ class LBS_Admin {
 
 		LBS_Logger::clear();
 
-		wp_redirect( add_query_arg( array(
-			'page' => 'load-balanced-sync',
-			'tab'  => 'log',
-		), admin_url( 'options-general.php' ) ) );
+		wp_redirect(
+			add_query_arg(
+				array(
+					'page' => 'load-balanced-sync',
+					'tab'  => 'log',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 }
