@@ -12,7 +12,7 @@ This file provides local guidance for AI coding agents working in this plugin.
 
 - Use existing naming and class structure patterns in the plugin.
 - Prefer extending existing classes over introducing new global functions.
-- Keep REST and admin concerns separated in their current directories.
+- Keep REST and admin concerns separated under `includes/rest-api/` and `includes/admin/`.
 - Avoid changing public behavior unless explicitly requested.
 - Treat `src/` as the source of truth for authored JS and SCSS.
 - Treat `build/` as generated output from `@wordpress/scripts`.

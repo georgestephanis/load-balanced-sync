@@ -63,8 +63,8 @@ npm run format
 ## Project Layout
 
 - `includes/`: core services and update execution logic
-- `rest-api/`: REST route controllers
-- `admin/`: wp-admin UI and notices
+- `includes/rest-api/`: REST route controllers
+- `includes/admin/`: wp-admin UI, notices, and views
 - `src/`: authored JavaScript and SCSS source files
 - `build/`: generated admin assets produced by `@wordpress/scripts`
 

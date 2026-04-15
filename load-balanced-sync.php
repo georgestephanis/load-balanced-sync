@@ -96,15 +96,15 @@ function lbs_init(): void {
 	require_once LBS_PLUGIN_DIR . 'includes/class-lbs-update-executor.php';
 
 	// REST API controllers.
-	require_once LBS_PLUGIN_DIR . 'rest-api/class-lbs-rest-handshake-controller.php';
-	require_once LBS_PLUGIN_DIR . 'rest-api/class-lbs-rest-ping-controller.php';
-	require_once LBS_PLUGIN_DIR . 'rest-api/class-lbs-rest-update-controller.php';
-	require_once LBS_PLUGIN_DIR . 'rest-api/class-lbs-rest-status-controller.php';
+	require_once LBS_PLUGIN_DIR . 'includes/rest-api/class-lbs-rest-handshake-controller.php';
+	require_once LBS_PLUGIN_DIR . 'includes/rest-api/class-lbs-rest-ping-controller.php';
+	require_once LBS_PLUGIN_DIR . 'includes/rest-api/class-lbs-rest-update-controller.php';
+	require_once LBS_PLUGIN_DIR . 'includes/rest-api/class-lbs-rest-status-controller.php';
 
 	// Admin.
 	if ( is_admin() ) {
-		require_once LBS_PLUGIN_DIR . 'admin/class-lbs-admin.php';
-		require_once LBS_PLUGIN_DIR . 'admin/class-lbs-admin-notices.php';
+		require_once LBS_PLUGIN_DIR . 'includes/admin/class-lbs-admin.php';
+		require_once LBS_PLUGIN_DIR . 'includes/admin/class-lbs-admin-notices.php';
 		( new LBS_Admin() )->register();
 		( new LBS_Admin_Notices() )->register();
 	}

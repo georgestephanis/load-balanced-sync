@@ -251,7 +251,7 @@ class LBS_Admin {
 
 		echo '<div class="lbs-tab-content">';
 
-		$view_file = LBS_PLUGIN_DIR . 'admin/views/page-' . $tab . '.php';
+		$view_file = LBS_PLUGIN_DIR . 'includes/admin/views/page-' . $tab . '.php';
 		if ( file_exists( $view_file ) ) {
 			include $view_file;
 		} else {
